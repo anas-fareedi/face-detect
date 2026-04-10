@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Registered Faces</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    h1 {
+      text-align: center;
+      color: #333;
+    }
+    #faces {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 20px;
+      margin-top: 20px;
+    }
+    .face-card {
+      background: white;
+      border-radius: 10px;
+      padding: 15px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+    .face-card img {
+      width: 100%;
+      max-width: 200px;
+      height: 200px;
+      object-fit: cover;
+      border-radius: 10px;
+      margin-bottom: 10px;
+      border: 3px solid #4CAF50;
+    }
+    .face-card .no-image {
+      width: 100%;
+      height: 200px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 48px;
+      margin-bottom: 10px;
+    }
+    .student-id {
+      font-size: 18px;
+      font-weight: bold;
+      color: #333;
+      margin-bottom: 5px;
+    }
+    .descriptors {
+      color: #666;
+      font-size: 14px;
+      margin-bottom: 10px;
+    }
+    .delete-btn {
+      background: #f44336;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: bold;
+      margin-top: 5px;
+    }
+    .delete-btn:hover {
+      background: #da190b;
+    }
+    .back-btn {
+      display: inline-block;
+      margin-bottom: 20px;
+      padding: 10px 20px;
+      background: #2196F3;
+      color: white;
+      text-decoration: none;
+      border-radius: 5px;
+      font-weight: bold;
+    }
+    .back-btn:hover {
+      background: #0b7dda;
+    }
+  </style>
+</head>
+<body>
+  <a href="registerFace.html" class="back-btn">← Back to Register</a>
+  <h1>👥 Registered Faces</h1>
+  <div id="faces">Loading...</div>
+
+  <script>
+    const API_BASE_URL = 'http://localhost:8000/api/v1';
+    
+    async function loadFaces() {
+      try {
+        const res = await fetch(`${API_BASE_URL}/face/all`);
+        const data = await res.json();
+        const faces = data.data || [];
+        
+        if (faces.length === 0) {
+          document.getElementById('faces').innerHTML = '<p style="text-align:center;color:#999;">No registered faces found</p>';
+          return;
+        }
+        
+        document.getElementById('faces').innerHTML = faces.map(f => `
+          <div class="face-card">
+            ${f.image_data 
+              ? `<img src="${f.image_data}" alt="${f.label}">` 
+              : `<div class="no-image">👤</div>`
+            }
+            <div class="student-id">Student ID: ${f.label}</div>
+            <div class="descriptors">Descriptors: ${f.descriptors.length}</div>
+            <button class="delete-btn" onclick="deleteFace('${f.label}')">🗑️ Delete</button>
+          </div>
+        `).join('');
+      } catch (e) {
+        console.error('Error loading faces:', e);
+        document.getElementById('faces').innerHTML = '<p style="text-align:center;color:red;">Error loading faces. Make sure backend is running.</p>';
+      }
+    }
+    
+    async function deleteFace(studentId) {
+      if (!confirm(`Delete ${studentId}?`)) return;
+      
+      try {
+        const res = await fetch(`${API_BASE_URL}/face/delete`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ student_ids: [studentId] })
+        });
+        
+        const result = await res.json();
+        if (result.success) {
+          alert('✓ Deleted!');
+          loadFaces();
+        } else {
+          alert('✗ Delete failed');
+        }
+      } catch (e) {
+        console.error('Delete error:', e);
+        alert('✗ Error deleting');
+      }
+    }
+    
+    loadFaces();
+  </script>
+</body>
+</html>
